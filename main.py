@@ -9,14 +9,14 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 logging.basicConfig(level=logging.INFO)
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Assalomu alaykum! 👋\n\n"
         "Ushbu bot rus tilidan o'zbek tiliga tarjima qilish xizmatini taqdim etadi.\n\n"
         "Tarjima qilish uchun matnni yuboring — bot tez orada natijani qaytaradi.\n\n"
-        "Barcha formatlash (qalin shrift, kursiv, havolalar) to'liq saqlanadi. ✅"
+        "Barcha formatlash (qalin shrift, kursiv, havolalar) to'liq saqlanadi. ✅\n\n"
         "@goedu_uz obuna bo'ling"
     )
 
