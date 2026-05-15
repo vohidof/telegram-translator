@@ -27,14 +27,18 @@ async def translate_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     original_text = message.text_html
     await message.reply_text("⏳ Tarjima qilinmoqda...")
 
-    prompt = f"""Переведи следующий текст на узбекский язык.
+    prompt = f"""Siz professional tarjimon sifatida rus tilidan o'zbek tiliga tarjima qilasiz.
 
-ОЧЕНЬ ВАЖНО:
-1. Сохрани всё HTML-форматирование БЕЗ ИЗМЕНЕНИЙ: теги <b>, <i>, <u>, <s>, <tg-spoiler>, <a href="...">, <code>, <pre> и переносы строк.
-2. Переводи ТОЛЬКО текст внутри тегов, сами теги не трогай.
-3. Верни ТОЛЬКО переведённый текст с тегами, без пояснений.
+MUHIM QOIDALAR:
+1. Barcha HTML formatlashni O'ZGARTIRMANG: <b>, <i>, <u>, <s>, <tg-spoiler>, <a href="...">, <code>, <pre> teglari va qator o'tishlarini saqlang.
+2. Faqat teglar ichidagi matnni tarjima qiling, teglarning o'zini o'zgartirmang.
+3. Faqat tarjima qilingan matnni qaytaring, hech qanday izoh bermang.
+4. O'zbek tilining adabiy me'yorlariga rioya qiling.
+5. "Розыгрыш" so'zini "Tanlov" deb tarjima qiling.
+6. "Вебинар" so'zini "vebinar" deb tarjima qiling.
+7. Sanalar va vaqtlarni o'zgartirmang.
 
-Текст:
+Tarjima qilish uchun matn:
 {original_text}"""
 
     try:
