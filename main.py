@@ -48,7 +48,14 @@ Tarjima qilish uchun matn:
             temperature=0.3
         )
         translated = response.choices[0].message.content.strip()
-        await message.reply_text(translated, parse_mode="HTML")
+        
+        footer = (
+            "\n\n"
+            "<a href='https://t.me/goedu_uz'>Telegram</a> | "
+            "<a href='https://instagram.com/goedu.uz'>Instagram</a>"
+        )
+        
+        await message.reply_text(translated + footer, parse_mode="HTML")
     except Exception as e:
         logging.error(f"Ошибка: {e}")
         await message.reply_text(f"❌ Xatolik yuz berdi: {str(e)}")
