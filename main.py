@@ -92,8 +92,9 @@ def build_full_post(translated, original_html, lang_pair):
         "<a href='https://instagram.com/goedu.uz'>Instagram</a>"
     )
     if lang_pair == "lang_ru_uz":
-        spoiler = f"<tg-spoiler>{original_html}</tg-spoiler>"
-        return translated + "\n\n" + spoiler + footer
+        # Заменили <tg-spoiler> на разворачиваемую цитату <blockquote expandable>
+        spoiler = f"\n\n<blockquote expandable><b>Original matn:</b>\n{original_html}</blockquote>"
+        return translated + spoiler + footer
     else:
         return translated + footer
 
