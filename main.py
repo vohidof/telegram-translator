@@ -4,7 +4,14 @@ import json
 from datetime import datetime, timedelta
 import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, MessageHandler, CommandHandler, CallbackQueryHandler, filters, ContextTypes
+from telegram.ext import (
+    Application,
+    MessageHandler,
+    CommandHandler,
+    CallbackQueryHandler,
+    filters,
+    ContextTypes,
+)
 from groq import Groq
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -37,7 +44,7 @@ def increment_stat(key):
 def reset_stats():
     save_stats({"translated": 0, "published": 0, "scheduled": 0})
 
-# --- Одобренные пользователи ---
+# --- Пользователи ---
 def load_approved():
     if os.path.exists(APPROVED_USERS_FILE):
         with open(APPROVED_USERS_FILE, "r") as f:
@@ -55,11 +62,7 @@ def is_approved(user_id):
 
 # --- Перевод ---
 async def do_translate(text, lang_pair):
-    if lang_pair == "lang_ru_uz":
-        instruction = "rus tilidan o'zbek tiliga tarjima qil"
-    else:
-        instruction = "ingliz tilidan o'zbek tiliga tarjima qil"
-
+    instruction = "rus tilidan o'zbek tiliga tarjima qil" if lang_pair == "lang_ru_uz" else "ingliz tilidan o'zbek tiliga tarjima qil"
     prompt = f"""Siz professional tarjimon sifatida {instruction}.
 
 MUHIM QOIDALAR:
@@ -77,7 +80,7 @@ Tarjima qilish uchun matn:
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
+        temperature=0.3,
     )
     return response.choices[0].message.content.strip()
 
@@ -95,16 +98,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not is_approved(user_id):
         await update.message.reply_text(
-            "Salom! 👋\n\n"
-            "Botdan foydalanish uchun admin ruxsati kerak.\n"
-            "Ruxsat so'rash uchun /request buyrug'ini yuboring."
+            "Salom! 👋\n\nBotdan foydalanish uchun admin ruxsati kerak.\n"
+            "Ruxsat so'rash uchun: /request"
         )
         return
-    text = (
-        "Assalomu alaykum! 👋\n\n"
-        "Tarjima qilish uchun matnni yuboring. ✅\n\n"
-        "📊 Statistika: /stats"
-    )
+    text = "Assalomu alaykum! 👋\n\nTarjima qilish uchun matnni yuboring. ✅\n\n📊 Statistika: /stats"
     if user_id == OWNER_ID:
         text += "\n👥 Foydalanuvchilar: /users"
     await update.message.reply_text(text)
@@ -115,22 +113,20 @@ async def request_access(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Sizda allaqachon ruxsat bor!")
         return
     await update.message.reply_text("⏳ So'rovingiz adminga yuborildi. Kuting.")
-    keyboard = [
-        [
-            InlineKeyboardButton("✅ Ruxsat berish", callback_data=f"approve_{user.id}_{user.full_name}"),
-            InlineKeyboardButton("❌ Rad etish", callback_data=f"reject_{user.id}"),
-        ]
-    ]
+    keyboard = [[
+        InlineKeyboardButton("✅ Ruxsat berish", callback_data=f"approve_{user.id}"),
+        InlineKeyboardButton("❌ Rad etish", callback_data=f"reject_{user.id}"),
+    ]]
     await context.bot.send_message(
         chat_id=OWNER_ID,
         text=(
             f"🔔 <b>Yangi so'rov</b>\n\n"
             f"👤 Ism: {user.full_name}\n"
             f"🆔 ID: <code>{user.id}</code>\n\n"
-            f"Bu foydalanuvchiga botdan foydalanishga ruxsat berasizmi?"
+            f"Bu foydalanuvchiga ruxsat berasizmi?"
         ),
         parse_mode="HTML",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -144,9 +140,7 @@ async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = []
     for uid in approved:
         text += f"🆔 <code>{uid}</code>\n"
-        keyboard.append([
-            InlineKeyboardButton(f"❌ {uid} ni o'chirish", callback_data=f"remove_{uid}")
-        ])
+        keyboard.append([InlineKeyboardButton(f"❌ {uid} ni o'chirish", callback_data=f"remove_{uid}")])
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -155,10 +149,10 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stats = load_stats()
     await update.message.reply_text(
         f"📊 <b>Haftalik statistika</b>\n\n"
-        f"🔄 Tarjima qilingan: <b>{stats.get('translated', 0)}</b> ta post\n"
-        f"✅ Kanalga joylashtirilgan: <b>{stats.get('published', 0)}</b> ta post\n"
-        f"🕐 Rejalashtirilgan: <b>{stats.get('scheduled', 0)}</b> ta post",
-        parse_mode="HTML"
+        f"🔄 Tarjima qilingan: <b>{stats.get('translated', 0)}</b> ta\n"
+        f"✅ Joylashtirilgan: <b>{stats.get('published', 0)}</b> ta\n"
+        f"🕐 Rejalashtirilgan: <b>{stats.get('scheduled', 0)}</b> ta",
+        parse_mode="HTML",
     )
 
 async def send_weekly_stats(context: ContextTypes.DEFAULT_TYPE):
@@ -167,50 +161,31 @@ async def send_weekly_stats(context: ContextTypes.DEFAULT_TYPE):
         chat_id=OWNER_ID,
         text=(
             f"📊 <b>Haftalik statistika</b>\n\n"
-            f"🔄 Tarjima qilingan: <b>{stats.get('translated', 0)}</b> ta post\n"
-            f"✅ Kanalga joylashtirilgan: <b>{stats.get('published', 0)}</b> ta post\n"
-            f"🕐 Rejalashtirilgan: <b>{stats.get('scheduled', 0)}</b> ta post\n\n"
-            f"Statistika yangilandi. Yangi hafta boshlanadi! 🚀"
+            f"🔄 Tarjima qilingan: <b>{stats.get('translated', 0)}</b> ta\n"
+            f"✅ Joylashtirilgan: <b>{stats.get('published', 0)}</b> ta\n"
+            f"🕐 Rejalashtirilgan: <b>{stats.get('scheduled', 0)}</b> ta\n\n"
+            f"Yangi hafta boshlanadi! 🚀"
         ),
-        parse_mode="HTML"
+        parse_mode="HTML",
     )
     reset_stats()
 
-def schedule_weekly_stats(app):
-    now = datetime.now(TASHKENT_TZ)
-    days_until_sunday = (6 - now.weekday()) % 7
-    if days_until_sunday == 0 and now.hour >= 19:
-        days_until_sunday = 7
-    next_sunday = now.replace(hour=19, minute=0, second=0, microsecond=0) + timedelta(days=days_until_sunday)
-    delay = (next_sunday - now).total_seconds()
-    app.job_queue.run_repeating(
-        send_weekly_stats,
-        interval=7 * 24 * 3600,
-        first=delay,
-        name="weekly_stats"
-    )
-
 # --- Основной обработчик ---
 async def translate_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not is_approved(user_id):
+    if not is_approved(update.effective_user.id):
         await update.message.reply_text("❌ Ruxsat yo'q. /request buyrug'ini yuboring.")
         return
-
     original_text = update.message.text_html
     context.user_data["original"] = original_text
     context.user_data["waiting_correction"] = False
     context.user_data["waiting_time"] = False
-
-    keyboard = [
-        [
-            InlineKeyboardButton("🇷🇺 Rus → O'zbek", callback_data="lang_ru_uz"),
-            InlineKeyboardButton("🇬🇧 Ingliz → O'zbek", callback_data="lang_en_uz"),
-        ]
-    ]
+    keyboard = [[
+        InlineKeyboardButton("🇷🇺 Rus → O'zbek", callback_data="lang_ru_uz"),
+        InlineKeyboardButton("🇬🇧 Ingliz → O'zbek", callback_data="lang_en_uz"),
+    ]]
     await update.message.reply_text(
         "Tarjima yo'nalishini tanlang:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -218,31 +193,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
 
-    # Одобрение пользователя
     if data.startswith("approve_"):
-        parts = data.split("_", 2)
-        uid = int(parts[1])
+        uid = int(data.split("_")[1])
         approved = load_approved()
         if uid not in approved:
             approved.append(uid)
             save_approved(approved)
         await query.edit_message_reply_markup(reply_markup=None)
         await query.message.reply_text(f"✅ Foydalanuvchi {uid} qabul qilindi.")
-        await context.bot.send_message(
-            chat_id=uid,
-            text="✅ Sizga botdan foydalanishga ruxsat berildi! /start buyrug'ini yuboring."
-        )
+        await context.bot.send_message(chat_id=uid, text="✅ Botdan foydalanishga ruxsat berildi! /start yuboring.")
 
     elif data.startswith("reject_"):
         uid = int(data.split("_")[1])
         await query.edit_message_reply_markup(reply_markup=None)
         await query.message.reply_text(f"❌ Foydalanuvchi {uid} rad etildi.")
-        await context.bot.send_message(
-            chat_id=uid,
-            text="❌ Afsuski, so'rovingiz rad etildi."
-        )
+        await context.bot.send_message(chat_id=uid, text="❌ So'rovingiz rad etildi.")
 
-    # Удаление пользователя
     elif data.startswith("remove_"):
         uid = int(data.split("_")[1])
         approved = load_approved()
@@ -251,33 +217,22 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             save_approved(approved)
         await query.edit_message_reply_markup(reply_markup=None)
         await query.message.reply_text(f"✅ Foydalanuvchi {uid} o'chirildi.")
-        await context.bot.send_message(
-            chat_id=uid,
-            text="⚠️ Botdan foydalanish huquqingiz bekor qilindi."
-        )
+        await context.bot.send_message(chat_id=uid, text="⚠️ Botdan foydalanish huquqingiz bekor qilindi.")
 
-    # Выбор языка
     elif data in ("lang_ru_uz", "lang_en_uz"):
         await query.edit_message_reply_markup(reply_markup=None)
         context.user_data["lang_pair"] = data
-        keyboard = [
-            [
-                InlineKeyboardButton("💬 Faqat tarjima", callback_data="only_translate"),
-                InlineKeyboardButton("📢 Kanal uchun", callback_data="for_publish"),
-            ]
-        ]
-        await query.message.reply_text(
-            "Qanday tarjima qilish kerak?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+        keyboard = [[
+            InlineKeyboardButton("💬 Faqat tarjima", callback_data="only_translate"),
+            InlineKeyboardButton("📢 Kanal uchun", callback_data="for_publish"),
+        ]]
+        await query.message.reply_text("Qanday tarjima qilish kerak?", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data == "only_translate":
         await query.edit_message_reply_markup(reply_markup=None)
         await query.message.reply_text("⏳ Tarjima qilinmoqda...")
         try:
-            original = context.user_data.get("original", "")
-            lang_pair = context.user_data.get("lang_pair", "lang_ru_uz")
-            translated = await do_translate(original, lang_pair)
+            translated = await do_translate(context.user_data.get("original", ""), context.user_data.get("lang_pair", "lang_ru_uz"))
             increment_stat("translated")
             await query.message.reply_text(translated, parse_mode="HTML")
         except Exception as e:
@@ -288,8 +243,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("⏳ Tarjima qilinmoqda...")
         try:
             original = context.user_data.get("original", "")
-            lang_pair = context.user_data.get("lang_pair", "lang_ru_uz")
-            translated = await do_translate(original, lang_pair)
+            translated = await do_translate(original, context.user_data.get("lang_pair", "lang_ru_uz"))
             increment_stat("translated")
             full_text = build_full_post(translated, original)
             context.user_data["translated"] = full_text
@@ -298,12 +252,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton("✅ Hozir yuborish", callback_data="publish_now"),
                     InlineKeyboardButton("🕐 Vaqt belgilash", callback_data="schedule"),
                 ],
-                [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel")]
+                [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel")],
             ]
-            await query.message.reply_text(
-                full_text, parse_mode="HTML",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
+            await query.message.reply_text(full_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
         except Exception as e:
             await query.message.reply_text(f"❌ Xatolik: {str(e)}")
 
@@ -320,24 +271,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         now = datetime.now(TASHKENT_TZ)
         await query.message.reply_text(
             f"🕐 Qaysi vaqtda yuborish kerak?\n\n"
-            f"Hozirgi vaqt Toshkentda: <b>{now.strftime('%H:%M')}</b>\n\n"
+            f"Hozirgi vaqt: <b>{now.strftime('%H:%M')}</b>\n\n"
             f"Vaqtni yuboring, masalan: <b>18:00</b>",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         context.user_data["waiting_time"] = True
 
     elif data == "cancel":
         await query.edit_message_reply_markup(reply_markup=None)
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Ha", callback_data="yes_correction"),
-                InlineKeyboardButton("❌ Yo'q", callback_data="no_correction"),
-            ]
-        ]
-        await query.message.reply_text(
-            "Tahrirlangan versiyani yubormoqchimisiz?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+        keyboard = [[
+            InlineKeyboardButton("✅ Ha", callback_data="yes_correction"),
+            InlineKeyboardButton("❌ Yo'q", callback_data="no_correction"),
+        ]]
+        await query.message.reply_text("Tahrirlangan versiyani yubormoqchimisiz?", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data == "yes_correction":
         await query.edit_message_reply_markup(reply_markup=None)
@@ -380,28 +326,32 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             increment_stat("scheduled")
             context.user_data["waiting_time"] = False
             await update.message.reply_text(
-                f"✅ Post rejalashtirildi!\n"
-                f"📅 Yuborish vaqti: <b>{scheduled_time.strftime('%d.%m.%Y %H:%M')} (Toshkent)</b>",
-                parse_mode="HTML"
+                f"✅ Post rejalashtirildi!\n📅 <b>{scheduled_time.strftime('%d.%m.%Y %H:%M')} (Toshkent)</b>",
+                parse_mode="HTML",
             )
         except ValueError:
-            await update.message.reply_text(
-                "❌ Noto'g'ri format. Iltimos: <b>18:00</b>", parse_mode="HTML"
-            )
+            await update.message.reply_text("❌ Noto'g'ri format. Masalan: <b>18:00</b>", parse_mode="HTML")
     else:
         await translate_message(update, context)
 
 async def send_scheduled(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    await context.bot.send_message(
-        chat_id=job.data["chat_id"],
-        text=job.data["text"],
-        parse_mode="HTML"
-    )
+    await context.bot.send_message(chat_id=job.data["chat_id"], text=job.data["text"], parse_mode="HTML")
     increment_stat("published")
 
-async def post_init(app):
-    schedule_weekly_stats(app)
+async def post_init(app: Application):
+    now = datetime.now(TASHKENT_TZ)
+    days_until_sunday = (6 - now.weekday()) % 7
+    if days_until_sunday == 0 and now.hour >= 19:
+        days_until_sunday = 7
+    next_sunday = now.replace(hour=19, minute=0, second=0, microsecond=0) + timedelta(days=days_until_sunday)
+    delay = (next_sunday - now).total_seconds()
+    app.job_queue.run_repeating(
+        send_weekly_stats,
+        interval=7 * 24 * 3600,
+        first=delay,
+        name="weekly_stats",
+    )
 
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).post_init(post_init).build()
