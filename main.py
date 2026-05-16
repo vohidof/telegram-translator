@@ -16,7 +16,8 @@ from groq import Groq
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-OWNER_ID = int(os.environ.get("OWNER_ID", "0"))
+OWNER_ID = int(os.environ.get("OWNER_ID", "0") or "0")
+logging.info(f"OWNER_ID loaded: {OWNER_ID}")
 CHANNEL_ID = "@goedu_uz"
 TASHKENT_TZ = pytz.timezone("Asia/Tashkent")
 STATS_FILE = "stats.json"
