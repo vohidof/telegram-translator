@@ -404,7 +404,7 @@ async def post_init(app):
     schedule_weekly_stats(app)
 
 def main():
-    app = Application.builder().token(TELEGRAM_TOKEN).post_init(post_init).build()
+    app = Application.builder().token(TELEGRAM_TOKEN).post_init(post_init).arbitrary_callback_data(True).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("request", request_access))
     app.add_handler(CommandHandler("users", users_command))
