@@ -256,7 +256,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton("✅ Hozir yuborish", callback_data="publish_now"),
                     InlineKeyboardButton("🕐 Vaqt belgilash", callback_data="schedule"),
                 ],
-                [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel")],
+                [InlineKeyboardButton("❌ Bekor quilting", callback_data="cancel")],
             ]
             await query.message.reply_text(full_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
         except Exception as e:
@@ -270,7 +270,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_reply_markup(reply_markup=None)
             await query.message.reply_text("✅ Post kanalga muvaffaqiyatli joylashtirildi!")
 
-elif data == "schedule":
+    elif data == "schedule":
         await query.edit_message_reply_markup(reply_markup=None)
         now = datetime.now(TASHKENT_TZ)
         keyboard = []
@@ -289,7 +289,7 @@ elif data == "schedule":
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-elif data.startswith("date_"):
+    elif data.startswith("date_"):
         selected_date = data.split("_")[1]
         context.user_data["selected_date"] = selected_date
         await query.edit_message_reply_markup(reply_markup=None)
@@ -333,11 +333,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["waiting_correction"] = False
         await update.message.reply_text("✅ Tahrirlangan matn kanalga joylashtirildi!")
 
-elif context.user_data.get("waiting_time"):
+    elif context.user_data.get("waiting_time"):
         time_text = update.message.text.strip()
         try:
             now = datetime.now(TASHKENT_TZ)
-         hour, minute = time_text.split(":")
+            hour, minute = time_text.split(":")
             selected_date = context.user_data.get("selected_date")
             if selected_date:
                 day, month = selected_date.split(".")
