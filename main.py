@@ -258,7 +258,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton("✅ Hozir yuborish", callback_data="publish_now"),
                     InlineKeyboardButton("🕐 Vaqt belgilash", callback_data="schedule"),
                 ],
-                [InlineKeyboardButton("❌ Bekor quiling", callback_data="cancel")],
+                [InlineKeyboardButton("❌ Bekor qiling", callback_data="cancel")],
             ]
             await query.message.reply_text(full_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
         except Exception as e:
