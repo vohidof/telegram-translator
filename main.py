@@ -85,14 +85,17 @@ Tarjima qilish uchun matn:
     )
     return response.choices[0].message.content.strip()
 
-def build_full_post(translated, original_html):
-    spoiler = f"<tg-spoiler>{original_html}</tg-spoiler>"
+def build_full_post(translated, original_html, lang_pair):
     footer = (
         "\n\n"
         "<a href='https://t.me/goedu_uz'>Telegram</a> | "
         "<a href='https://instagram.com/goedu.uz'>Instagram</a>"
     )
-    return translated + "\n\n" + spoiler + footer
+    if lang_pair == "lang_ru_uz":
+        spoiler = f"<tg-spoiler>{original_html}</tg-spoiler>"
+        return translated + "\n\n" + spoiler + footer
+    else:
+        return translated + footer
 
 # --- Команды ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -246,7 +249,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             original = context.user_data.get("original", "")
             translated = await do_translate(original, context.user_data.get("lang_pair", "lang_ru_uz"))
             increment_stat("translated")
-            full_text = build_full_post(translated, original)
+            full_text = build_full_post(translated, original, context.user_data.get("lang_pair", "lang_ru_uz"))
             context.user_data["translated"] = full_text
             keyboard = [
                 [
@@ -265,15 +268,37 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=CHANNEL_ID, text=translated, parse_mode="HTML")
             increment_stat("published")
             await query.edit_message_reply_markup(reply_markup=None)
-            await query.message.reply_text("✅ Post kaналga muvaffaqiyatli joylashtirildi!")
+            await query.message.reply_text("✅ Post kanalga muvaffaqiyatli joylashtirildi!")
 
-    elif data == "schedule":
+elif data == "schedule":
+        await query.edit_message_reply_markup(reply_markup=None)
+        now = datetime.now(TASHKENT_TZ)
+        keyboard = []
+        row = []
+        for i in range(7):
+            day = now + timedelta(days=i)
+            label = "Bugun" if i == 0 else ("Ertaga" if i == 1 else day.strftime("%d.%m"))
+            row.append(InlineKeyboardButton(label, callback_data=f"date_{day.strftime('%d.%m')}"))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
+        await query.message.reply_text(
+            "📅 Kunni tanlang:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+elif data.startswith("date_"):
+        selected_date = data.split("_")[1]
+        context.user_data["selected_date"] = selected_date
         await query.edit_message_reply_markup(reply_markup=None)
         now = datetime.now(TASHKENT_TZ)
         await query.message.reply_text(
             f"🕐 Qaysi vaqtda yuborish kerak?\n\n"
-            f"Hozirgi vaqt: <b>{now.strftime('%H:%M')}</b>\n\n"
-            f"Vaqtni yuboring, masalan: <b>18:00</b>",
+            f"Hozirgi vaqt Toshkentda: <b>{now.strftime('%d.%m.%Y %H:%M')}</b>\n\n"
+            f"Faqat vaqt: <b>18:00</b>\n"
+            f"Sana va vaqt: <b>25.05 18:00</b>",
             parse_mode="HTML",
         )
         context.user_data["waiting_time"] = True
@@ -308,15 +333,40 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["waiting_correction"] = False
         await update.message.reply_text("✅ Tahrirlangan matn kanalga joylashtirildi!")
 
-    elif context.user_data.get("waiting_time"):
+elif context.user_data.get("waiting_time"):
         time_text = update.message.text.strip()
         try:
             now = datetime.now(TASHKENT_TZ)
-            scheduled_time = TASHKENT_TZ.localize(
-                datetime.strptime(f"{now.date()} {time_text}", "%Y-%m-%d %H:%M")
-            )
+         hour, minute = time_text.split(":")
+            selected_date = context.user_data.get("selected_date")
+            if selected_date:
+                day, month = selected_date.split(".")
+                scheduled_time = TASHKENT_TZ.localize(datetime(
+                    year=now.year,
+                    month=int(month),
+                    day=int(day),
+                    hour=int(hour),
+                    minute=int(minute)
+                ))
+                context.user_data["selected_date"] = None
+            else:
+                scheduled_time = TASHKENT_TZ.localize(datetime(
+                    year=now.year,
+                    month=now.month,
+                    day=now.day,
+                    hour=int(hour),
+                    minute=int(minute)
+                ))
+                if scheduled_time <= now:
+                    scheduled_time += timedelta(days=1)
+
             if scheduled_time <= now:
-                scheduled_time += timedelta(days=1)
+                await update.message.reply_text(
+                    "❌ Bu vaqt o'tib ketgan. Kelajakdagi vaqtni kiriting.",
+                    parse_mode="HTML"
+                )
+                return
+
             delay = (scheduled_time - now).total_seconds()
             translated = context.user_data.get("translated")
             context.job_queue.run_once(
@@ -330,8 +380,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"✅ Post rejalashtirildi!\n📅 <b>{scheduled_time.strftime('%d.%m.%Y %H:%M')} (Toshkent)</b>",
                 parse_mode="HTML",
             )
-        except ValueError:
-            await update.message.reply_text("❌ Noto'g'ri format. Masalan: <b>18:00</b>", parse_mode="HTML")
+        except (ValueError, AttributeError):
+            await update.message.reply_text(
+                "❌ Noto'g'ri format. Quyidagilardan birini yuboring:\n"
+                "• Faqat vaqt: <b>18:00</b>\n"
+                "• Sana va vaqt: <b>25.05 18:00</b>",
+                parse_mode="HTML"
+            )
     else:
         await translate_message(update, context)
 
