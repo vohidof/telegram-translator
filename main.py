@@ -74,6 +74,7 @@ MUHIM QOIDALAR:
 5. "Розыгрыш" so'zini "Tanlov" deb tarjima qiling.
 6. "Вебинар" / "webinar" so'zini "vebinar" deb tarjima qiling.
 7. Sanalar va vaqtlarni o'zgartirmang.
+8. "дедлайн" so'zini "So'ngi muddat" deb tarjima qiling.
 
 Tarjima qilish uchun matn:
 {text}"""
@@ -93,7 +94,7 @@ def build_full_post(translated, original_html, lang_pair):
     )
     if lang_pair == "lang_ru_uz":
         # Заменили <tg-spoiler> на разворачиваемую цитату <blockquote expandable>
-        spoiler = f"\n\n<blockquote expandable><b>Original matn:</b>\n{original_html}</blockquote>"
+        spoiler = f"\n\n<blockquote expandable><b>Текст на русском:</b>\n{original_html}</blockquote>"
         return translated + spoiler + footer
     else:
         return translated + footer
@@ -257,7 +258,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton("✅ Hozir yuborish", callback_data="publish_now"),
                     InlineKeyboardButton("🕐 Vaqt belgilash", callback_data="schedule"),
                 ],
-                [InlineKeyboardButton("❌ Bekor quilting", callback_data="cancel")],
+                [InlineKeyboardButton("❌ Bekor quiling", callback_data="cancel")],
             ]
             await query.message.reply_text(full_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
         except Exception as e:
